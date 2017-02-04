@@ -174,6 +174,7 @@ UPROGS=\
 	_dummy\
 	_proccnt\
 	_syscallcnt\
+	_pagecnt\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)

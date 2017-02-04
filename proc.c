@@ -487,6 +487,11 @@ getnumsyscall(void){
 }
 
 int
+getpagecount(void){
+  return (proc->sz - 1)/PGSIZE + 1;
+}
+
+int
 info(int param){
 //  cprintf("\n Info() received argument: %d \n\n", param);
   switch(param){
@@ -495,11 +500,9 @@ info(int param){
     case 2:
       return getnumsyscall();
     case 3:
-      cprintf("Print pageframe\n");
-          break;
+      return getpagecount();
     default:
       cprintf("Unknown parameter %d for Info()\n", param);
+          return 0;
   }
-
-  return param;
 }
