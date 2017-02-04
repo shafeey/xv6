@@ -47,6 +47,9 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+
+  p->numsyscall = 0; // Initialize number of system calls to zero
+
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -479,14 +482,18 @@ getproccount(void){
 }
 
 int
+getnumsyscall(void){
+  return proc->numsyscall;
+}
+
+int
 info(int param){
-  cprintf("\n Info() received argument: %d \n\n", param);
+//  cprintf("\n Info() received argument: %d \n\n", param);
   switch(param){
     case 1:
       return getproccount();
     case 2:
-      cprintf("Print syscall count\n");
-          break;
+      return getnumsyscall();
     case 3:
       cprintf("Print pageframe\n");
           break;
