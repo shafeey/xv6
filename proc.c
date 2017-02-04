@@ -461,3 +461,38 @@ hello(void)
 {
 	cprintf("\n\n Hello from the kernel space! \n\n");
 }
+
+
+int
+getproccount(void){
+  int count = 0;
+  struct proc *p;
+
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if (p->state != UNUSED) {
+      count++;
+    }
+  }
+  release(&ptable.lock);
+  return count;
+}
+
+int
+info(int param){
+  cprintf("\n Info() received argument: %d \n\n", param);
+  switch(param){
+    case 1:
+      return getproccount();
+    case 2:
+      cprintf("Print syscall count\n");
+          break;
+    case 3:
+      cprintf("Print pageframe\n");
+          break;
+    default:
+      cprintf("Unknown parameter %d for Info()\n", param);
+  }
+
+  return param;
+}

@@ -95,3 +95,13 @@ sys_hello(void)
   hello();
   return 0;
 }
+
+int
+sys_info(void)
+{
+  int param;
+
+  if(argint(0, &param) < 0)
+    return -1;
+  return info(param);
+}
