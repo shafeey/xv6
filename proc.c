@@ -49,6 +49,8 @@ found:
   p->pid = nextpid++;
 
   p->numsyscall = 0; // Initialize number of system calls to zero
+  p->tickets = 25; // Allocate 20 tickets (default priority) for lottery scheduling
+  p->numticks = 0;
 
   release(&ptable.lock);
 
@@ -249,6 +251,61 @@ wait(void)
   }
 }
 
+unsigned int m_w = 20;    /* must not be zero, nor 0x464fffff */
+unsigned int m_z = 15;    /* must not be zero, nor 0x9068ffff */
+
+unsigned int get_random()
+{
+  m_z = 36969 * (m_z & 65535) + (m_z >> 16);
+  m_w = 18000 * (m_w & 65535) + (m_w >> 16);
+  return (m_z << 16) + m_w;  /* 32-bit result */
+}
+
+// Simple PRNG based on LCG
+// Ref: https://rosettacode.org/wiki/Linear_congruential_generator#C
+// CPU ticks are passed as seed
+unsigned int rseed = 12345;
+unsigned int rand(){
+  return (rseed = (rseed * 214013 + 2531011) & 0x7FFFFFFF) >> 16;
+}
+
+// Finds winner based on ticket number
+struct proc* lottery(void){
+  struct proc* p;
+  int ticket;
+  int pool_size=0;
+
+  ticket = get_random() % MAX_TICKETS;
+
+  // First Pass: If winning ticket is found in the pool
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state == RUNNABLE)
+      pool_size += p->tickets;
+
+    if(pool_size > ticket)
+      return p;
+  }
+
+  if(pool_size == 0)
+    return 0;
+//    panic("Total tickets should not be Zero");
+
+  // Second Pass: We know the pool size. Adjust winning ticket
+  ticket = ticket % pool_size;
+  pool_size = 0;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state == RUNNABLE)
+      pool_size += p->tickets;
+
+    if(pool_size > ticket)
+      return p;
+  }
+
+  panic("Error in lottery scheduler");
+}
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
@@ -262,33 +319,47 @@ scheduler(void)
 {
   struct proc *p;
 
+  int tickscnt;
+
   for(;;){
     // Enable interrupts on this processor.
     sti();
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
 
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
+    p = lottery();
+
+//    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+//      if(p->state != RUNNABLE)
+//        continue;
+
+    if(p){
+    // Switch to chosen process.  It is the process's job
+    // to release ptable.lock and then reacquire it
+    // before jumping back to us.
       proc = p;
+      tickscnt = -ticks;
+
       switchuvm(p);
       p->state = RUNNING;
       swtch(&cpu->scheduler, proc->context);
       switchkvm();
 
+      tickscnt += ticks;
+      p->numticks += tickscnt;
+
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       proc = 0;
+
     }
+
     release(&ptable.lock);
 
   }
 }
+#pragma clang diagnostic pop
 
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state.
@@ -488,6 +559,7 @@ getnumsyscall(void){
 
 int
 getpagecount(void){
+//  cprintf("Scan found: %d\n", scanpgdir(proc->pgdir));
   return (proc->sz - 1)/PGSIZE + 1;
 }
 
@@ -505,4 +577,29 @@ info(int param){
       cprintf("Unknown parameter %d for Info()\n", param);
           return 0;
   }
+}
+
+int
+settickets(int tickets){
+  if(tickets == 0)
+    panic("Cannot assign zero tickets to process. Assign tickets in range 1~50");
+
+  if(tickets >= 50)
+    panic("Maximum possible tickets is 50");
+
+  proc->tickets = tickets;
+
+  return 0;
+}
+
+int
+getstat(void){
+  struct proc *p;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state != UNUSED){
+      cprintf("Process %d was active for %d ticks\n",p->pid, p->numticks);
+    }
+  }
+
+  return proc->numticks;
 }

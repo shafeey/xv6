@@ -64,6 +64,29 @@ walkpgdir(pde_t *pgdir, const void *va, int alloc)
   return &pgtab[PTX(va)];
 }
 
+// Returns the number of Page table entries marked as "Present (PTE_P)"
+// by iterating over the page directory and its mapped page tables
+int
+scanpgdir(pde_t *pgdir){
+  pde_t *pdptr = pgdir;
+  pte_t *ptptr;
+  pte_t *pti;
+  int count = 0;
+
+  for(; pdptr < pgdir + NPDENTRIES/2; pdptr++){ // Scan through PGD
+    if(*pdptr & PTE_P){ // Page table is present
+      ptptr = (pte_t*)p2v(PTE_ADDR(*pdptr));
+      for(pti = ptptr; pti < ptptr + NPTENTRIES; pti++){
+        if(*pti & PTE_P) {
+          count++;
+        }
+      }
+    }
+  }
+
+  return count;
+}
+
 // Create PTEs for virtual addresses starting at va that refer to
 // physical addresses starting at pa. va and size might not
 // be page-aligned.

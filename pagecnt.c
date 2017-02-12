@@ -17,8 +17,8 @@ int main(int argc, char *argv[])
 
     int i;
     for(i=0; i<LOOP; i++){
-        printf(stdout, "\nAllocating memory...\n");
-        arr[i] = (int*) malloc(4096);
+        printf(stdout, "\nAllocating 4kb memory...\n");
+        arr[i] = (int*) malloc(4096 - sizeof(uint) - sizeof(uint*));
         ret = info(3);
         printf(stdout, "Number of Pages: %d\n", ret);
     }

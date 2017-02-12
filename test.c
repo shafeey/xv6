@@ -4,14 +4,17 @@
 
 int main(int argc, char *argv[])
 {
-    int stdout = 1;
+  settickets(30);
+  printf(1, "Starting process with id %d\n", getpid());
 
-    int ret;
-    ret = info(1);
-    printf(stdout, "Number of processes: %d\n\n", ret);
+  int i,k;
+  const int loop=20000;
 
-//    info(2);
-//    info(3);
+  for(i=0;i<loop;i++)
+    for(k=0;k<loop;k++)
+        asm("nop");
+
+  getstat();
 
 	exit();
 }

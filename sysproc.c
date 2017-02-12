@@ -105,3 +105,20 @@ sys_info(void)
     return -1;
   return info(param);
 }
+
+int
+sys_settickets(void)
+{
+  int param;
+
+  if(argint(0, &param) < 0)
+    return -1;
+  return settickets(param);
+}
+
+int
+sys_getstat(void)
+{
+  return getstat();
+}
+
