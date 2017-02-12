@@ -51,6 +51,7 @@ found:
   p->numsyscall = 0; // Initialize number of system calls to zero
   p->tickets = 25; // Allocate 20 tickets (default priority) for lottery scheduling
   p->numticks = 0;
+  p->pass = 0;
 
   release(&ptable.lock);
 
@@ -314,6 +315,8 @@ struct proc* lottery(void){
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+
+#define MAXTHRESHOLD 1000
 void
 scheduler(void)
 {
@@ -328,17 +331,37 @@ scheduler(void)
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
 
-    p = lottery();
+//    cprintf("%p\n", p);
+    uint min = (uint)(-1);
+    struct proc *pi;
+    // Pick the process with minimum pass
+    for(pi = ptable.proc; pi < &ptable.proc[NPROC]; pi++){
+      if(pi->state == RUNNABLE && pi->pass < min) {
+        min = pi->pass;
+        p = pi;
+      }
+    }
 
-//    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-//      if(p->state != RUNNABLE)
-//        continue;
+//    cprintf("%p\n",p);
 
-    if(p){
+    if(min != (uint)(-1) ){
     // Switch to chosen process.  It is the process's job
     // to release ptable.lock and then reacquire it
     // before jumping back to us.
       proc = p;
+
+      // Update pass with stride
+      p->pass += (MAXTHRESHOLD / p->tickets);
+
+      // If pass is > MAX-MAXTHRESHOLD; increment all by 2*MAXTHRESHOLD to recycle all of them after zero
+      if(p->pass > (uint)(-1) - MAXTHRESHOLD){
+        for(pi=ptable.proc; pi < &ptable.proc[NPROC]; p++){
+          pi->pass += 2*MAXTHRESHOLD;
+        }
+      }
+
+      // Now its safe to jump to the chosen process
+
       tickscnt = -ticks;
 
       switchuvm(p);

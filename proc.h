@@ -69,6 +69,7 @@ struct proc {
   int numsyscall;              // Number of system calls invoked
   int numticks;                // Number of ticks
   int tickets;                 // Number of tickets held by process
+  uint pass;
 };
 
 // Process memory is laid out contiguously, low addresses first:
