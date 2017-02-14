@@ -119,6 +119,10 @@ sys_settickets(void)
 int
 sys_getstat(void)
 {
-  return getstat();
+  int param;
+
+  if(argint(0, &param) < 0)
+    return -1;
+  return getstat(param);
 }
 

@@ -119,7 +119,7 @@ void            yield(void);
 void            hello(void);
 int             info(int);
 int             settickets(int);
-int             getstat(void);
+int             getstat(int);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

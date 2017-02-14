@@ -305,8 +305,6 @@ struct proc* lottery(void){
   panic("Error in lottery scheduler");
 }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
@@ -382,7 +380,6 @@ scheduler(void)
 
   }
 }
-#pragma clang diagnostic pop
 
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state.
@@ -607,7 +604,7 @@ settickets(int tickets){
   if(tickets == 0)
     panic("Cannot assign zero tickets to process. Assign tickets in range 1~50");
 
-  if(tickets >= 50)
+  if(tickets > 50)
     panic("Maximum possible tickets is 50");
 
   proc->tickets = tickets;
@@ -616,13 +613,14 @@ settickets(int tickets){
 }
 
 int
-getstat(void){
+getstat(int i){
   struct proc *p;
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->state != UNUSED){
-      cprintf("Process %d was active for %d ticks\n",p->pid, p->numticks);
-    }
-  }
+  /* for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ */
+    /* if(p->state != UNUSED){ */
+      /* cprintf("Process %d was active for %d ticks\n",p->pid, p->numticks); */
+    /* } */
+  /* } */
 
-  return proc->numticks;
+  p = &ptable.proc[i-1];
+  return p->numticks;
 }
